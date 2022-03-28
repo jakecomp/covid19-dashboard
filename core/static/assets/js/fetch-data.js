@@ -174,7 +174,7 @@ function load_cases_table() {
 
                 new_row += "<td class='font-weight-bold'>" + row["Country"] + "</td>";
                 new_row += "<td>" + addCommas(row["Confirmed"]) + "</td>";
-                new_row += "<td>" + addCommas(row["Recovered"]) + "</td>";
+                new_row += "<td>" + addCommas(row["calc_recovered"]) + "</td>";
                 new_row += "<td>" + addCommas(row["Deaths"]) + "</td>";
                 new_row += "<td>" + (row["Death Rate"]) + "</td>";
                 new_row += "</tr>";
@@ -211,7 +211,7 @@ function load_realtime_growth_chart() {
 
             var recovered_trace = {
                 x: dates,
-                y: Object.values(data["Recovered"]),
+                y: Object.values(data["calc_recovered"]),
                 name: "Recovered",
                 line: {color: "#2DCE89", width: 4}
             };

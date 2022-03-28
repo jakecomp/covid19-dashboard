@@ -16,7 +16,8 @@ env
 venv
 envwin 
 envwin/
-envwin/Lib/
+envwin/Lib/ 
+covid_env/
 # other
 .DS_Store
 

@@ -3,7 +3,8 @@
 import datetime
 import platform
 
-import pandas as pd
+import pandas as pd 
+import math
 
 # Datasets scraped can be found in the following URL's:
 # ¹ Johns Hopkins: https://github.com/CSSEGISandData/COVID-19 
@@ -30,8 +31,24 @@ def daily_report(date_string=None):
     else: 
         file_date = date_string 
     
-    df = pd.read_csv(report_directory + file_date + '.csv', dtype={"FIPS": str})
-    return df
+    df = pd.read_csv(report_directory + file_date + '.csv', dtype={"FIPS": str}) 
+
+    df['calc_recovered'] = df.apply(lambda row: calc_recovered(row), axis=1)
+    return df 
+
+
+def calc_recovered(row): 
+
+    confirmed = row['Confirmed'] 
+    deaths = row['Deaths']  
+    rec = row['Recovered']
+
+    # The idea here is to use the provided recovered number if it's indeed a number 
+    # else calculate the theortical recovered number
+    if math.isnan(rec) or rec == 0: 
+        return confirmed - deaths
+
+    return rec
 
 
 def daily_confirmed():
@@ -82,7 +99,9 @@ def realtime_growth(date_string=None, weekly=False, monthly=False):
     
     growth_df = pd.DataFrame([])
     growth_df['Confirmed'], growth_df['Deaths'], growth_df['Recovered'] = df1, df2, df3
-    growth_df.index = growth_df.index.rename('Date')
+    growth_df.index = growth_df.index.rename('Date') 
+
+    growth_df['calc_recovered'] = growth_df.apply(lambda row: calc_recovered(row), axis=1)
     
     yesterday = pd.Timestamp('now').date() - pd.Timedelta(days=1)
     
@@ -129,7 +148,7 @@ def global_cases():
     Returns:
         [pd.DataFrame]
     """
-    df = daily_report()[['Country_Region', 'Confirmed', 'Recovered', 'Deaths', 'Active']]
+    df = daily_report()[['Country_Region', 'Confirmed', 'calc_recovered', 'Deaths', 'Active']]
     df.rename(columns={'Country_Region':'Country'}, inplace=True) 
     df = df.groupby('Country', as_index=False).sum()  # Dataframe mapper, combines rows where country value is the same
     df.sort_values(by=['Confirmed'], ascending=False, inplace=True)
