@@ -80,7 +80,7 @@
                   <h2 class="mb-0">Cases</h2>
                 </div>
                 <div class="col text-right">
-                  <a href="#!" class="btn btn-sm btn-white">
+                  <a href="#!" class="btn btn-sm btn-white" onclick="tableToCSV();">
                     &nbsp;<i class="fas fa-download">&nbsp;</i>
                   </a>
                 </div>
@@ -126,4 +126,8 @@ $('.home-item a').addClass('active');
 
 <!-- Load and display data -->
 <script defer src="/static/assets/js/fetch-data.js"></script>
+
+<!-- Download Cases Script -->
+<script defer src="/static/assets/js/download.js"></script>
+
 {% endblock javascripts %}
