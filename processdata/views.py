@@ -12,13 +12,14 @@ def index(request):
 
 
 def report(request):
-    df = getdata.daily_report(date_string=None)
-    df = df[['Confirmed', 'Deaths', 'calc_recovered']].sum()
+    df = getdata.daily_report(date_string=None) 
+    total_vaxxed = max(df['people_fully_vaccinated'])
+    df = df[['Confirmed', 'Deaths']].sum()
     death_rate = f'{(df.Deaths / df.Confirmed)*100:.02f}%'
 
     data = {
         'num_confirmed': int(df.Confirmed),
-        'num_recovered': int(df.calc_recovered),
+        'num_recovered': int(total_vaxxed),
         'num_deaths': int(df.Deaths),
         'death_rate': death_rate
     }
@@ -34,7 +35,7 @@ def trends(request):
     data = {
         'confirmed_trend': int(round(df.Confirmed)),
         'deaths_trend': int(round(df.Deaths)),
-        'recovered_trend': int(round(df.calc_recovered)),
+        'recovered_trend': int(round(df.people_fully_vaccinated)),
         'death_rate_trend': float(df.Death_rate)
     }
 

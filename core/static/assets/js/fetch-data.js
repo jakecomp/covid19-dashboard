@@ -174,7 +174,7 @@ function load_cases_table() {
 
                 new_row += "<td class='font-weight-bold'>" + row["Country"] + "</td>";
                 new_row += "<td>" + addCommas(row["Confirmed"]) + "</td>";
-                new_row += "<td>" + addCommas(row["calc_recovered"]) + "</td>";
+                new_row += "<td>" + addCommas(row["people_fully_vaccinated"]) + "</td>";
                 new_row += "<td>" + addCommas(row["Deaths"]) + "</td>";
                 new_row += "<td>" + (row["Death Rate"]) + "</td>";
                 new_row += "</tr>";
@@ -211,8 +211,8 @@ function load_realtime_growth_chart() {
 
             var recovered_trace = {
                 x: dates,
-                y: Object.values(data["calc_recovered"]),
-                name: "Recovered",
+                y: Object.values(data["people_fully_vaccinated"]),
+                name: "Vaccinatios",
                 line: {color: "#2DCE89", width: 4}
             };
 

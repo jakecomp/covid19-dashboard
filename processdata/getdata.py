@@ -31,24 +31,25 @@ def daily_report(date_string=None):
     else: 
         file_date = date_string 
     
-    df = pd.read_csv(report_directory + file_date + '.csv', dtype={"FIPS": str}) 
+    df = pd.read_csv(report_directory + file_date + '.csv', dtype={"FIPS": str})
 
-    df['calc_recovered'] = df.apply(lambda row: calc_recovered(row), axis=1)
-    return df 
+    vaxx_df = vaccinated_report()
+    vaxx_df['date'] = pd.to_datetime(vaxx_df['date'])  
+    max_date = max(vaxx_df['date'])  
+    vaxx_df.drop(vaxx_df[vaxx_df['date'] != max_date].index,inplace=True) 
+    vaxx_df['date'] = vaxx_df['date'].dt.strftime(STRFTIME_DATA_FRAME_FORMAT)
+    vaxx_df.rename(columns={'location':'Country_Region'},inplace=True)
+
+    drop_contenents = ['Oceania','Europe','Africa','North America','South America','Asia']
+    filtered_df = vaxx_df[~vaxx_df['Country_Region'].isin(drop_contenents)].reset_index()
+    most_recent_vaxx_df = filtered_df.drop(columns = [col for col in filtered_df if col != 'Country_Region' and col != 'people_fully_vaccinated'])   
+    most_recent_vaxx_df.drop_duplicates(subset=['Country_Region'],inplace=True) 
 
 
-def calc_recovered(row): 
+    join_df = pd.merge(df,most_recent_vaxx_df,on='Country_Region',how='outer') 
 
-    confirmed = row['Confirmed'] 
-    deaths = row['Deaths']  
-    rec = row['Recovered']
-
-    # The idea here is to use the provided recovered number if it's indeed a number 
-    # else calculate the theortical recovered number
-    if math.isnan(rec) or rec == 0: 
-        return confirmed - deaths
-
-    return rec
+    
+    return join_df
 
 
 def daily_confirmed():
@@ -79,7 +80,12 @@ def deaths_report():
 def recovered_report():
     # Return time series version of total recoveries globally
     df = pd.read_csv('https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_recovered_global.csv')
-    return df 
+    return df  
+
+def vaccinated_report(): 
+    df = pd.read_csv("https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/vaccinations/vaccinations.csv") 
+    return df
+
 
 
 def realtime_growth(date_string=None, weekly=False, monthly=False):
@@ -94,14 +100,26 @@ def realtime_growth(date_string=None, weekly=False, monthly=False):
         [growth_df] -- [growth in series]
     """ 
     df1 = confirmed_report()[confirmed_report().columns[4:]].sum()
-    df2 = deaths_report()[deaths_report().columns[4:]].sum()
-    df3 = recovered_report()[recovered_report().columns[4:]].sum()
-    
-    growth_df = pd.DataFrame([])
-    growth_df['Confirmed'], growth_df['Deaths'], growth_df['Recovered'] = df1, df2, df3
-    growth_df.index = growth_df.index.rename('Date') 
+    df2 = deaths_report()[deaths_report().columns[4:]].sum()  
 
-    growth_df['calc_recovered'] = growth_df.apply(lambda row: calc_recovered(row), axis=1)
+    countrys_to_include = set(confirmed_report()['Country/Region'])
+
+    df3 = vaccinated_report()    
+    df3['date'] = pd.to_datetime(df3['date'])
+    df3['date'] = df3['date'].dt.strftime(STRFTIME_DATA_FRAME_FORMAT) 
+    drop_contenents = ['Oceania','Europe','Africa','North America','South America','Asia','World']
+    df3 = df3[~df3['location'].isin(drop_contenents)]
+
+
+    df3_total = df3.groupby('date').aggregate({'daily_people_vaccinated':'sum'})
+
+
+    growth_df = pd.DataFrame([])
+    growth_df['Confirmed'], growth_df['Deaths'], growth_df['people_fully_vaccinated'] = df1, df2, df3_total
+    growth_df.index = growth_df.index.rename('Date')  
+    growth_df['people_fully_vaccinated'] = growth_df['people_fully_vaccinated'].fillna(0)   
+    growth_df.drop(growth_df.tail(2).index,inplace=True)
+
     
     yesterday = pd.Timestamp('now').date() - pd.Timedelta(days=1)
     
@@ -148,7 +166,7 @@ def global_cases():
     Returns:
         [pd.DataFrame]
     """
-    df = daily_report()[['Country_Region', 'Confirmed', 'calc_recovered', 'Deaths', 'Active']]
+    df = daily_report()[['Country_Region', 'Confirmed', 'people_fully_vaccinated', 'Deaths', 'Active']]
     df.rename(columns={'Country_Region':'Country'}, inplace=True) 
     df = df.groupby('Country', as_index=False).sum()  # Dataframe mapper, combines rows where country value is the same
     df.sort_values(by=['Confirmed'], ascending=False, inplace=True)
